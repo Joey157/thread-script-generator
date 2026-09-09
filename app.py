@@ -3,28 +3,6 @@ import streamlit as st
 import json
 import datetime
 
-HISTORY_FILE = "history.json"
-
-def save_session_history(profile, selected_display, top_hooks, generated_scripts, long_text):
-    record = {
-        "id": datetime.datetime.now().strftime("%Y%m%d_%H%M%S"),
-        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "situation": profile.get('situation', ''),
-        "long_text": long_text,
-        "mode": selected_display,
-        "scripts": [{"style": top_hooks[i].get("hook_style", ""), "script": generated_scripts[i]} for i in range(len(generated_scripts))]
-    }
-    history = []
-    if os.path.exists(HISTORY_FILE):
-        try:
-            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-                history = json.load(f)
-        except:
-            pass
-    history.insert(0, record)
-    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
-
 
 import pandas as pd
 import google.genai as genai
@@ -65,7 +43,7 @@ if not check_password():
 st.title("🔥 쓰레드(Threads) 특화 쇼핑 대본 생성기")
 
 # 모바일 친화적인 탭(Tab) UI로 전면 개편 (사이드바 제거)
-tab_gen, tab_hist, tab_setting = st.tabs(["🚀 대본 생성기", "📚 히스토리 보관함", "⚙️ 설정"])
+tab_gen, tab_setting = st.tabs(["🚀 대본 생성기", "⚙️ 설정"])
 
 with tab_setting:
     st.header("⚙️ 설정 및 API 키")
@@ -381,8 +359,7 @@ with tab_gen:
                                         generated_scripts[idx] = f"생성 중 오류 발생: {e}"
                             
                             status.update(label="🚀 모든 대본 생성 완료!", state="complete", expanded=False)
-                            save_session_history(profile, selected_display, top_hooks, generated_scripts, long_text)
-                        
+
                             # 4. 결과 출력
                             with st.expander("AI 분석 결과 보기"):
                                 st.json(profile)
@@ -425,45 +402,4 @@ with tab_gen:
                                     else:
                                         st.text_area("결과물", final_script, height=300, key=f"full_{i}")
 
-with tab_hist:
-    st.header("📚 이전 생성 대본 히스토리")
-    if os.path.exists(HISTORY_FILE):
-        try:
-            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-                history = json.load(f)
-            
-            if not history:
-                st.info("아직 저장된 히스토리가 없습니다.")
-            else:
-                for idx, record in enumerate(history):
-                    with st.expander(f"🕒 {record['timestamp']} | 상황: {record['situation'][:30]}... | 벤치마킹: {record['mode']}", expanded=(idx==0)):
-                        st.markdown(f"**📝 입력 소구점:** {record.get('long_text', '')}")
 
-                        download_content = f"입력 소구점: {record.get('long_text', '')}\n\n"
-                        for i, s in enumerate(record['scripts']):
-                            download_content += f"=== 대본 {i+1} ({s['style']}) ===\n"
-                            download_content += f"{s['script']}\n\n"
-                        
-                        st.download_button(
-                            label="📥 이 대본 모음 다운로드 (.txt)",
-                            data=download_content.encode('utf-8-sig'),
-                            file_name=f"대본생성결과_{record['timestamp'].replace(':', '').replace(' ', '_').replace('-', '')}.txt",
-                            mime="text/plain",
-                            key=f"dl_{idx}"
-                        )
-                        tabs = st.tabs([f"대본 {i+1} ({s['style']})" for i, s in enumerate(record['scripts'])])
-                        for i, tab in enumerate(tabs):
-                            with tab:
-                                final_script = record['scripts'][i]['script']
-                                if "[댓글]" in final_script:
-                                    parts = final_script.split("[댓글]")
-                                    main_post = parts[0].replace("[본문]", "").strip()
-                                    comment_post = parts[1].strip()
-                                    st.text_area(f"본문 (히스토리 {idx}_{i})", main_post, height=150)
-                                    st.text_area(f"댓글 (히스토리 {idx}_{i})", comment_post, height=150)
-                                else:
-                                    st.text_area(f"결과물 (히스토리 {idx}_{i})", final_script, height=300)
-        except Exception as e:
-            st.error(f"히스토리 로드 중 에러: {e}")
-    else:
-        st.info("아직 저장된 히스토리가 없습니다.")
