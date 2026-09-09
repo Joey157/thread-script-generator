@@ -64,17 +64,15 @@ if not check_password():
 
 st.title("🔥 쓰레드(Threads) 특화 쇼핑 대본 생성기")
 
-# API 키 입력 (사이드바)
-with st.sidebar:
-    
-    st.header("📌 메뉴")
-    menu_mode = st.radio("모드 선택", ["🚀 대본 생성기", "📚 히스토리 보관함"])
-    st.markdown("---")
-    st.header("⚙️ 설정")
+# 모바일 친화적인 탭(Tab) UI로 전면 개편 (사이드바 제거)
+tab_gen, tab_hist, tab_setting = st.tabs(["🚀 대본 생성기", "📚 히스토리 보관함", "⚙️ 설정"])
 
-    # 브라우저 세션에만 임시 저장 (파일로 저장하지 않음)
+with tab_setting:
+    st.header("⚙️ 설정 및 API 키")
+    
+    # 💡 Streamlit Secrets에 GEMINI_API_KEY가 등록되어 있으면 그걸 기본값으로 가져옵니다!
     if "api_key" not in st.session_state:
-        st.session_state["api_key"] = ""
+        st.session_state["api_key"] = st.secrets.get("GEMINI_API_KEY", "")
         
     api_key_input = st.text_input("Gemini API Key", type="password", value=st.session_state["api_key"])
     
@@ -84,8 +82,17 @@ with st.sidebar:
         os.environ["GEMINI_API_KEY"] = api_key_input
     
     api_key = api_key_input
-    st.markdown("---")
+    
+    if api_key:
+        st.success("✅ API 키가 활성화되었습니다.")
+    else:
+        st.error("⚠️ API 키가 입력되지 않았습니다.")
+        
     st.markdown("API 키 발급은 [Google AI Studio](https://aistudio.google.com/)에서 가능합니다.")
+    
+    st.markdown("---")
+    if st.button("🔄 CSV 벤치마킹 파일 새로고침", use_container_width=True):
+        st.rerun()
 
 # DB 폴더 설정
 DB_FOLDER = "db_accounts"
@@ -96,11 +103,6 @@ if not os.path.exists(DB_FOLDER):
 def get_csv_options():
     csv_files = glob.glob(f"{DB_FOLDER}/*.csv")
     return [os.path.basename(f) for f in csv_files]
-
-# 사이드바에 새로고침 버튼 추가
-with st.sidebar:
-    if st.button("🔄 CSV 파일 목록 새로고침", use_container_width=True):
-        st.rerun()
 
 mode_options = get_csv_options()
 
@@ -275,9 +277,9 @@ def generate_script(profile_data, original_hook):
     return response.text
 
 # -------------------------------------------------------------------
-# 3. 좌측 탭 (입력)
+# 3. 대본 생성기 탭 (입력)
 # -------------------------------------------------------------------
-if menu_mode == "🚀 대본 생성기":
+with tab_gen:
     col1, col2 = st.columns(2)
     with col1:
         st.header("1. 입력 (Input)")
@@ -423,7 +425,7 @@ if menu_mode == "🚀 대본 생성기":
                                     else:
                                         st.text_area("결과물", final_script, height=300, key=f"full_{i}")
 
-elif menu_mode == "📚 히스토리 보관함":
+with tab_hist:
     st.header("📚 이전 생성 대본 히스토리")
     if os.path.exists(HISTORY_FILE):
         try:
