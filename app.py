@@ -39,6 +39,29 @@ from PIL import Image
 # 1. 기본 설정 및 UI 레이아웃
 # -------------------------------------------------------------------
 st.set_page_config(page_title="쓰레드 쇼핑 대본 생성기", layout="wide")
+
+def check_password():
+    """Returns `True` if the user had the correct password."""
+    if "password_correct" not in st.session_state:
+        st.session_state["password_correct"] = False
+
+    if not st.session_state["password_correct"]:
+        st.markdown("## 🔒 앱 접근 권한이 필요합니다")
+        password = st.text_input("비밀번호를 입력하세요", type="password")
+        if st.button("확인"):
+            # Streamlit Secrets에 저장된 비밀번호와 비교 (로컬 테스트용 기본값 '1234')
+            correct_password = st.secrets.get("APP_PASSWORD", "1234")
+            if password == correct_password:
+                st.session_state["password_correct"] = True
+                st.rerun()
+            else:
+                st.error("😕 비밀번호가 틀렸습니다.")
+        return False
+    return True
+
+if not check_password():
+    st.stop()
+
 st.title("🔥 쓰레드(Threads) 특화 쇼핑 대본 생성기")
 
 # API 키 입력 (사이드바)
