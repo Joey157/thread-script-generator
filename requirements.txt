@@ -1,0 +1,6 @@
+streamlit
+pandas
+google-genai
+faiss-cpu
+numpy
+pillow

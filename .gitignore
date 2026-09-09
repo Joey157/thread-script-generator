@@ -1,0 +1,5 @@
+.api_key
+__pycache__/
+history.json
+temp_*.mp4
+temp_*.mov
