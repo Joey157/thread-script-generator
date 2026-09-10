@@ -12,6 +12,11 @@ import os
 import glob
 import json
 from PIL import Image
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+except ImportError:
+    pass
 
 # -------------------------------------------------------------------
 # 1. 기본 설정 및 UI 레이아웃
@@ -262,7 +267,7 @@ with tab_gen:
     with col1:
         st.header("1. 입력 (Input)")
     
-        uploaded_files = st.file_uploader("📸 제품 사진/영상 업로드 (여러 개 가능)", type=["png", "jpg", "jpeg", "webp", "mp4", "mov"], accept_multiple_files=True)
+        uploaded_files = st.file_uploader("📸 제품 사진/영상 업로드 (여러 개 가능)", type=["png", "jpg", "jpeg", "webp", "heic", "mp4", "mov"], accept_multiple_files=True)
         media_list = []
     
         if uploaded_files:
@@ -271,11 +276,11 @@ with tab_gen:
                 preview_cols = st.columns(3)
                 for idx, f in enumerate(uploaded_files):
                     col = preview_cols[idx % 3]
-                    if f.type.startswith("image"):
+                    if f.type.startswith("image") or f.name.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".heic")):
                         img = Image.open(f)
                         media_list.append(img)
                         col.image(img, use_container_width=True)
-                    elif f.type.startswith("video"):
+                    elif f.type.startswith("video") or f.name.lower().endswith((".mp4", ".mov")):
                         import uuid
                         # 한글 파일명으로 인한 API 헤더 인코딩 에러(UnicodeEncodeError) 방지를 위해 영문/숫자 난수로 임시 파일명 생성
                         temp_path = f"temp_{uuid.uuid4().hex}.mp4"
